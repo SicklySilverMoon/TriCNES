@@ -21,6 +21,8 @@ namespace TriCNES.Views
         private CancellationTokenSource _cts = new CancellationTokenSource();
         private Task? _emuTask;
         private volatile bool _frameReady;
+        private int frameCount = 0;
+        private bool flip = false;
 
         public MainWindow()
         {
@@ -47,15 +49,20 @@ namespace TriCNES.Views
             Screen.Source = _bitmap;
             
             // Start emulator
-            _emuTask = Task.Run(AdvanceEmulator, _cts.Token);
+            // _emuTask = Task.Run(AdvanceEmulator, _cts.Token);
             
             // Start render timer on UI thread
             var renderTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(16)
             };
-            
-            renderTimer.Tick += (_, _) => ClockEmulator();
+
+            int frameCount = 0;
+            bool flip = false;
+            renderTimer.Tick += (_, _) =>
+            {
+                ClockEmulator();
+            };
             renderTimer.Start();
         }
         
@@ -68,140 +75,139 @@ namespace TriCNES.Views
         {
             _keysDown.Remove(e.Key);
         }
-
-        private void AdvanceEmulator()
-        {
-            while (!_cts.IsCancellationRequested)
-            {
-                byte controller1 = 0;
-                if (_keysDown.Contains(Key.X)) controller1 |= 0x80;
-                if (_keysDown.Contains(Key.Z)) controller1 |= 0x40;
-                if (_keysDown.Contains(Key.RightShift)) controller1 |= 0x20;
-                if (_keysDown.Contains(Key.Enter)) controller1 |= 0x10;
-                if (_keysDown.Contains(Key.Up)) controller1 |= 0x08;
-                if (_keysDown.Contains(Key.Down)) controller1 |= 0x04;
-                if (_keysDown.Contains(Key.Left)) controller1 |= 0x02;
-                if (_keysDown.Contains(Key.Right)) controller1 |= 0x01;
-                EMU.ControllerPort1 = controller1;
-                // }
-                // if (TraceLogger != null)
-                // {
-                //     EMU.Logging = TraceLogger.Logging;
-                //     if (EMU.DebugLog == null)
-                //     {
-                //         EMU.DebugLog = new StringBuilder();
-                //     }
-                //     EMU.DebugRange_Low = TraceLogger.RangeLow;
-                //     EMU.DebugRange_High = TraceLogger.RangeHigh;
-                //     EMU.OnlyDebugInRange = TraceLogger.OnlyDebugInRange();
-                // }
-                // else
-                // {
-                EMU.Logging = false;
-                EMU.DebugLog = new StringBuilder();
-                // }
-                EMU._CoreFrameAdvance();
-                _frameReady = true;
-                // Thread.Sleep(1); // gives UI thread time to run
-            }
-        }
         
         private void ClockEmulator()
         {
-            if (!_frameReady) return;
-            _frameReady = false;
-            // Screen.Source = EMU.BoarderedNTSCScreen.GetBitmap().CreateScaledBitmap(new PixelSize(341 * 8, 262 * 8));
-            EMU.BoarderedNTSCScreen.CopyIntoBitmap(_bitmap);
-            using (var fb = _bitmap.Lock())
-            {
-                unsafe
-                {
-                    uint* p = (uint*)fb.Address;
-                    p[0] = 0xFFFF0000; // bright red pixel in top-left
-                }
-            }
-            Screen.InvalidateVisual();
-            
             // LockObject = pb_Screen;
             // lock (LockObject)
             // {
-            // while (true)
-            // {
-            // if (Form.ActiveForm != null)
-            // {
-            // if (pb_Screen.InvokeRequired)
-            // {
-            //     pb_Screen.Invoke(new MethodInvoker(
-            //     delegate ()
+            //     while (true)
             //     {
-            // if (EMU.PPU_DecodeSignal)
-            // {
-            //     if (EMU.PPU_ShowScreenBoarders)
-            //     {
-            //         pb_Screen.Image = EMU.BoarderedNTSCScreen.Bitmap;
-            //     }
-            //     else
-            //     {
-            //         pb_Screen.Image = EMU.NTSCScreen.Bitmap;
-            //     }
-            // }
-            // else
-            // {
-            //     if (EMU.PPU_ShowScreenBoarders)
-            //     {
-            //         pb_Screen.Image = EMU.BoarderedScreen.Bitmap;
-            //     }
-            //     else
-            //     {
-            //         pb_Screen.Image = EMU.Screen.Bitmap;
-            //     }
-            // }
-            // pb_Screen.Update();
-            //     }));
-            // }
-            // else
-            // {
-            //     if (EMU.PPU_DecodeSignal)
-            //     {
-            //         if (EMU.PPU_ShowScreenBoarders)
+            //         if (Form.ActiveForm != null)
             //         {
-            //             pb_Screen.Image = EMU.BoarderedNTSCScreen.Bitmap;
-            //         }
-            //         else
-            //         {
-            //             pb_Screen.Image = EMU.NTSCScreen.Bitmap;
-            //         }
-            //     }
-            //     else
-            //     {
-            //         if (EMU.PPU_ShowScreenBoarders)
-            //         {
-            //             pb_Screen.Image = EMU.BoarderedScreen.Bitmap;
-            //         }
-            //         else
-            //         {
-            //             pb_Screen.Image = EMU.Screen.Bitmap;
-            //         }
-            //     }
-            //     pb_Screen.Update();
+            //             if (pb_Screen.InvokeRequired)
+            //             {
+            //                 pb_Screen.Invoke(new MethodInvoker(
+            //                     delegate()
+            //                     {
+            //                         if (EMU.PPU_DecodeSignal)
+            //                         {
+            //                             if (EMU.PPU_ShowScreenBoarders)
+            //                             {
+            //                                 pb_Screen.Image = EMU.BoarderedNTSCScreen.Bitmap;
+            //                             }
+            //                             else
+            //                             {
+            //                                 pb_Screen.Image = EMU.NTSCScreen.Bitmap;
+            //                             }
+            //                         }
+            //                         else
+            //                         {
+            //                             if (EMU.PPU_ShowScreenBoarders)
+            //                             {
+            //                                 pb_Screen.Image = EMU.BoarderedScreen.Bitmap;
+            //                             }
+            //                             else
+            //                             {
+            //                                 pb_Screen.Image = EMU.Screen.Bitmap;
+            //                             }
+            //                         }
+            //
+            //                         pb_Screen.Update();
+            //                     }));
+            //             }
+            //             else
+            //             {
+            //                 if (EMU.PPU_DecodeSignal)
+            //                 {
+            //                     if (EMU.PPU_ShowScreenBoarders)
+            //                     {
+            //                         pb_Screen.Image = EMU.BoarderedNTSCScreen.Bitmap;
+            //                     }
+            //                     else
+            //                     {
+            //                         pb_Screen.Image = EMU.NTSCScreen.Bitmap;
+            //                     }
+            //                 }
+            //                 else
+            //                 {
+            //                     if (EMU.PPU_ShowScreenBoarders)
+            //                     {
+            //                         pb_Screen.Image = EMU.BoarderedScreen.Bitmap;
+            //                     }
+            //                     else
+            //                     {
+            //                         pb_Screen.Image = EMU.Screen.Bitmap;
+            //                     }
+            //                 }
+            //
+            //                 pb_Screen.Update();
+            //             }
+            //
+            //             if (TraceLogger != null)
+            //             {
+            //                 if (TraceLogger.Logging)
+            //                 {
+            //                     TraceLogger.Update();
+            //                     if (TraceLogger.ClearEveryFrame())
+            //                     {
+            //                         EMU.DebugLog = new StringBuilder();
+            //                     }
+            //                 }
+            //             }
             // }
             // if (TraceLogger != null)
             // {
-            //     if (TraceLogger.Logging)
+            //     EMU.Logging = TraceLogger.Logging;
+            //     if (EMU.DebugLog == null)
             //     {
-            //         TraceLogger.Update();
-            //         if (TraceLogger.ClearEveryFrame())
-            //         {
-            //             EMU.DebugLog = new StringBuilder();
+            //         EMU.DebugLog = new StringBuilder();
+            //     }
+            //     EMU.DebugRange_Low = TraceLogger.RangeLow;
+            //     EMU.DebugRange_High = TraceLogger.RangeHigh;
+            //     EMU.OnlyDebugInRange = TraceLogger.OnlyDebugInRange();
+            // }
+            // else
+            // {
+            // EMU.Logging = false;
+            // EMU.DebugLog = new StringBuilder();
+            // }
+
+                        // if (NametableViewer != null && !NametableViewer.IsDisposed)
+                        // {
+                        //     NametableViewer.Update(RenderNametable());
+                        // }
             //         }
             //     }
             // }
-            // if(NametableViewer != null && !NametableViewer.IsDisposed)
+            
+            byte controller1 = 0;
+            if (_keysDown.Contains(Key.X)) controller1 |= 0x80;
+            if (_keysDown.Contains(Key.Z)) controller1 |= 0x40;
+            if (_keysDown.Contains(Key.RightShift)) controller1 |= 0x20;
+            if (_keysDown.Contains(Key.Enter)) controller1 |= 0x10;
+            if (_keysDown.Contains(Key.Up)) controller1 |= 0x08;
+            if (_keysDown.Contains(Key.Down)) controller1 |= 0x04;
+            if (_keysDown.Contains(Key.Left)) controller1 |= 0x02;
+            if (_keysDown.Contains(Key.Right)) controller1 |= 0x01;
+            EMU.ControllerPort1 = controller1;
+            EMU._CoreFrameAdvance();
+            EMU.BoarderedNTSCScreen.CopyIntoBitmap(_bitmap);
+            frameCount++;
+            // if (frameCount % 4 == 0)
             // {
-            //     NametableViewer.Update(RenderNametable());
+            //     using var fb = _bitmap.Lock();
+            //
+            //     unsafe
+            //     {
+            //         uint* p = (uint*)fb.Address;
+            //
+            //         for (int i = 0; i < _bitmap.Size.Width * _bitmap.Size.Height; i++)
+            //             p[i] = flip ? 0xFF00FF00 : 0xFFFF0000; // green / red
+            //         flip = !flip;
+            //     }
             // }
-            // }
-            // }
+            Screen.InvalidateVisual();
         }
 
         // DirectBitmap NametableBitmap;
