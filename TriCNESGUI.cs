@@ -866,6 +866,7 @@ namespace TriCNES
     /// </summary>
     public class PictureBoxWithInterpolationMode : PictureBox
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public InterpolationMode InterpolationMode { get; set; }
 
         protected override void OnPaint(PaintEventArgs paintEventArgs)
