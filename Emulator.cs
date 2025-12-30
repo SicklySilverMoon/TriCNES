@@ -3,7 +3,11 @@ using System.Drawing;
 using System.Text;
 using System.IO;
 using System.Drawing.Imaging;
+using System.Drawing;
 using System.Runtime.InteropServices;
+using Avalonia;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 
 namespace TriCNES
 {
@@ -10811,8 +10815,19 @@ namespace TriCNES
     {
         // This class was copied from Stack Overflow
         // Writing to the standard Bitmap class is slow, so this class exists as a faster alternative.
-        public Bitmap Bitmap { get; private set; }
-        public Int32[] Bits { get; private set; }
+        // private WriteableBitmap Bitmap
+        // {
+        //     // get
+        //     // {
+        //     //     using var fb = Bitmap.Lock();
+        //     //     Marshal.Copy(Bits, 0, fb.Address, (int) (Bitmap.Size.Width * Bitmap.Size.Height));
+        //     //     return Bitmap;
+        //     // };
+        //     get;
+        //     set;
+        // }
+
+        public int[] Bits { get; private set; }
         public bool Disposed { get; private set; }
         public int Height { get; private set; }
         public int Width { get; private set; }
@@ -10823,9 +10838,28 @@ namespace TriCNES
         {
             Width = width;
             Height = height;
-            Bits = new Int32[width * height];
+            Bits = new int[width * height];
             BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
-            Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
+            // Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
+        }
+
+        public unsafe void CopyIntoBitmap(WriteableBitmap bitmap)
+        {
+            // // var Bitmap = new WriteableBitmap(new PixelSize(Width, Height), new Vector(96, 96), PixelFormat.Bgra8888);
+            // using var fb = bitmap.Lock();
+            // Marshal.Copy(Bits, 0, fb.Address, Width * Height * 4);
+            // // return Bitmap;
+            using var fb = bitmap.Lock();
+
+            fixed (int* src = Bits)
+            {
+                Buffer.MemoryCopy(
+                    src,
+                    (void*)fb.Address,
+                    bitmap.PixelSize.Width * bitmap.PixelSize.Height * sizeof(int),
+                    Width * Height * sizeof(int)
+                );
+            }
         }
 
         public void SetPixel(int x, int y, Color color)
@@ -10855,7 +10889,7 @@ namespace TriCNES
         {
             if (Disposed) return;
             Disposed = true;
-            Bitmap.Dispose();
+            // Bitmap.Dispose();
             BitsHandle.Free();
         }
     }
